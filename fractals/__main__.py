@@ -1,56 +1,51 @@
 import matplotlib.pyplot as plt  # Plotting functions
 import numpy as np  # Array and matrix representation
+import numpy.typing as npt
 
 
-# --- Constants ---
-# I use ALL CAPS to differentiate between normal variables. We declare them in the global scope (i.e., outside any
-# function) so we can use them anywhere. We shouldn't ever mutate these values because we trust that they won't change.
-ITERATIONS = 100000  # Number of points to generate
-SIDES = 3  # Number of sides of the regular polygon
+type Vector2 = npt.NDArray[np.float64]
+type Line2 = tuple[Vector2, Vector2]
 
 
-# I put all the code in a main function instead of the global scope because it makes it easier to add more code later.
-# In general, you shouldn't be putting anything but functions (like this one), type declarations, and constants in the
-# global scope.
+def rotation(angle_degrees: float) -> npt.NDArray[np.float64]:
+    return np.array([[np.cos(np.radians(angle_degrees)), -np.sin(np.radians(angle_degrees))],
+                     [np.sin(np.radians(angle_degrees)),  np.cos(np.radians(angle_degrees))]])
+
+
+def _koch_helper(start_point: Vector2, end_point: Vector2, depth: int) -> list[Line2]:
+    if depth == 0:
+        return [(start_point, end_point)]
+    R = rotation(60)
+    A = -(R - 2 * np.identity(2)) / 3
+    B = (R + np.identity(2)) / 3
+    points = [start_point,
+              (end_point - start_point) / 3 + start_point,
+              A@start_point + B@end_point,
+              2 * (end_point - start_point) / 3 + start_point,
+              end_point]
+    lines = [line for line in zip(points, points[1:])]
+    out_lines = lines.copy()
+    for index, line in enumerate(lines):
+        out_lines[index] = _koch_helper(line[0], line[1], depth - 1)
+    return [line for lines in out_lines for line in lines]
+
+
+def koch(start_point: Vector2, end_point: Vector2, depth: int) -> list[Vector2]:
+    lines = _koch_helper(start_point, end_point, depth)
+    return [line[0] for line in lines] + [lines[-1][1]]
+
+
 def main() -> None:
     rng = np.random.default_rng()  # Create a random number generator
 
-    # --- Get the vertices of the regular polygon ---
-    t = np.linspace(0, 2 * np.pi, SIDES + 1)[:-1]  # Gets evenly separated values from 0 to 2*pi
-    #                                        ^ Omit the last one (since 0 == 2*pi)
-    # Create a numpy array that contains our points. The first index is the vertex index, and the second is the
-    # vector component index.
-    v = np.array([np.cos(t), np.sin(t)]).T
-    #                                    ^ Transpose because the indices are reversed
+    x = np.array([-1, 0])
+    y = np.array([1, 0])
+    points = np.array(koch(x, y, 6))
 
-    # --- Create a transformation matrix ---
-    T = np.array([[0.5, 0.0],
-                  [0.0, 0.5]])
-
-    # --- Prepare point array ---
-    x = np.zeros(shape=(ITERATIONS + 1, 2))  # Start with an array of zeros
-    x[0] = rng.uniform(-0.5, 0.5, size=2)  # Randomly select the first point (remember Python is 0-indexed)
-
-    # --- Generate the points to form the Sierpinski triangle ---
-    for i in range(ITERATIONS):
-        k = rng.integers(SIDES)  # Choose a vertex (index) at random
-        # The next point is somewhere in between the vertex and the current point (currently half-way)
-        x[i + 1] = T @ (x[i] - v[k]) + v[k]
-        #            ^ Matrix multiplication (the standard multiplication operator * doesn't work)
-
-    # --- Plotting ---
-    fig, ax = plt.subplots()  # Create a figure and axes
-    ax.plot(x[:, 0], x[:, 1], '.', markersize=0.1)  # Plot the points
-    #         ^               ^    ^ This keyword argument reduces the marker size to increase the resolution of the
-    #         |               |      triangle
-    #         |               | This makes it so that there are no lines connecting each point
-    #         | This is called a "slice," and in this case it takes all the values in the first index
-    #           (i.e. all the points). We're separating the second index into 0 and 1 because those are the x and y
-    #           coordinates, respectively.
-
-    ax.set_aspect('equal')  # Make the scale of the axes equal
-
-    plt.show()  # Display the plot in a new window (you have to close the window to end the program)
+    fig, ax = plt.subplots(figsize=(20, 20))
+    ax.plot(points[:, 0], points[:, 1])
+    ax.set_aspect('equal')
+    plt.show()
 
 
 if __name__ == '__main__':  # Don't worry about what this does
