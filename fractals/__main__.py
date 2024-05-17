@@ -1,56 +1,69 @@
 import matplotlib.pyplot as plt  # Plotting functions
 import numpy as np  # Array and matrix representation
+import numpy.typing as npt
 
 
-# --- Constants ---
-# I use ALL CAPS to differentiate between normal variables. We declare them in the global scope (i.e., outside any
-# function) so we can use them anywhere. We shouldn't ever mutate these values because we trust that they won't change.
-ITERATIONS = 100000  # Number of points to generate
-SIDES = 3  # Number of sides of the regular polygon
+def de_rham_curve_ifs(alpha: float,
+                      beta: float,
+                      delta: float,
+                      epsilon: float,
+                      zeta: float,
+                      eta: float,
+                      samples: int = 10000,
+                      random_state: np.random.Generator | None = None) -> np.ndarray:
+    rng = np.random.default_rng(random_state)
+    d0 = np.array([[1,     0,       0],
+                   [0, alpha,   delta],
+                   [0,  beta, epsilon]])
+    d1 = np.array([[    1,         0,    0],
+                   [alpha, 1 - alpha, zeta],
+                   [ beta,     -beta,  eta]])
+
+    def step(point: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+        if rng.random() < 0.5:
+            return d0 @ point
+        else:
+            return d1 @ point
+    x = np.zeros(shape=(samples, 3))
+    x[:, 0] = 1
+    for i in range(1, samples):
+        x[i] = step(x[i - 1])
+    return x[:, 1:]
 
 
-# I put all the code in a main function instead of the global scope because it makes it easier to add more code later.
-# In general, you shouldn't be putting anything but functions (like this one), type declarations, and constants in the
-# global scope.
+def cesaro_curve_ifs(a: complex,
+                     samples: int = 10000,
+                     random_state: np.random.Generator | None = None) -> npt.NDArray[np.float64]:
+    alpha, beta = a.real, a.imag
+    return de_rham_curve_ifs(alpha, beta, -beta, alpha, beta, 1 - alpha,
+                             samples=samples, random_state=random_state)
+
+
+def takagi_curve_ifs(w: float,
+                     samples: int = 10000,
+                     random_state: np.random.Generator | None = None) -> npt.NDArray[np.float64]:
+    return de_rham_curve_ifs(0.5, 1, 0, w, 0, w,
+                             samples=samples, random_state=random_state)
+
+
+def koch_peano_curve_ifs(a: complex,
+                         samples: int = 10000,
+                         random_state: np.random.Generator | None = None) -> npt.NDArray[np.float64]:
+    alpha, beta = a.real, a.imag
+    return de_rham_curve_ifs(alpha, beta, beta, -alpha, -beta, alpha - 1,
+                             samples=samples, random_state=random_state)
+
+
 def main() -> None:
-    rng = np.random.default_rng()  # Create a random number generator
+    rng = np.random.default_rng()
 
-    # --- Get the vertices of the regular polygon ---
-    t = np.linspace(0, 2 * np.pi, SIDES + 1)[:-1]  # Gets evenly separated values from 0 to 2*pi
-    #                                        ^ Omit the last one (since 0 == 2*pi)
-    # Create a numpy array that contains our points. The first index is the vertex index, and the second is the
-    # vector component index.
-    v = np.array([np.cos(t), np.sin(t)]).T
-    #                                    ^ Transpose because the indices are reversed
+    x = koch_peano_curve_ifs(0.5 + np.sqrt(3) / 6 * 1j, random_state=rng)
 
-    # --- Create a transformation matrix ---
-    T = np.array([[0.5, 0.0],
-                  [0.0, 0.5]])
-
-    # --- Prepare point array ---
-    x = np.zeros(shape=(ITERATIONS + 1, 2))  # Start with an array of zeros
-    x[0] = rng.uniform(-0.5, 0.5, size=2)  # Randomly select the first point (remember Python is 0-indexed)
-
-    # --- Generate the points to form the Sierpinski triangle ---
-    for i in range(ITERATIONS):
-        k = rng.integers(SIDES)  # Choose a vertex (index) at random
-        # The next point is somewhere in between the vertex and the current point (currently half-way)
-        x[i + 1] = T @ (x[i] - v[k]) + v[k]
-        #            ^ Matrix multiplication (the standard multiplication operator * doesn't work)
-
-    # --- Plotting ---
-    fig, ax = plt.subplots()  # Create a figure and axes
-    ax.plot(x[:, 0], x[:, 1], '.', markersize=0.1)  # Plot the points
-    #         ^               ^    ^ This keyword argument reduces the marker size to increase the resolution of the
-    #         |               |      triangle
-    #         |               | This makes it so that there are no lines connecting each point
-    #         | This is called a "slice," and in this case it takes all the values in the first index
-    #           (i.e. all the points). We're separating the second index into 0 and 1 because those are the x and y
-    #           coordinates, respectively.
-
-    ax.set_aspect('equal')  # Make the scale of the axes equal
-
-    plt.show()  # Display the plot in a new window (you have to close the window to end the program)
+    fig, ax = plt.subplots(figsize=(20, 20))
+    ax.plot(x[:, 0], x[:, 1], '.', markersize=1)
+    ax.set_aspect('equal')
+    ax.set_title('Koch Snowflake')
+    plt.show()
 
 
 if __name__ == '__main__':  # Don't worry about what this does
