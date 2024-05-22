@@ -1,7 +1,7 @@
 """Definitions of de Rham curve iterated function systems."""
 
 
-from collections.abc import Generator
+from collections.abc import Generator, Callable
 import numpy as np
 import numpy.typing as npt
 from PIL import Image
@@ -32,7 +32,7 @@ class DeRhamIFS:
     Using the above conditions simplifies the parameters for the contracting maps to a half-way point and four
     parameters. d0 is always a linear transformation, and d1 is an affine transformation.
 
-    For maximal efficiency, points generated are saved in
+    For maximal efficiency, points generated are saved in an array which can be accessed later.
     """
     def __init__(self, halfway_point: complex, delta: float, epsilon: float, zeta: float, eta: float, random_state=None) -> None:
         """
@@ -54,6 +54,10 @@ class DeRhamIFS:
         self._rng = np.random.default_rng(random_state)
 
         self._points: npt.NDArray[np.float64] | None = None
+
+    @classmethod
+    def from_complex_functions(cls, d0: Callable[[complex], complex], d1: Callable[[complex], complex]) -> 'DeRhamIFS':
+        pass
 
     @property
     def points(self) -> npt.NDArray[np.float64]:
