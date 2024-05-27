@@ -17,6 +17,15 @@ def _scale(array: np.ndarray, bottom: float, top: float, bounds: tuple[float, fl
     return np.interp(array, bounds, (bottom, top))
 
 
+def _complex_function_to_matrix(func: Callable[[complex], complex], delta: float = 1e-5): 
+  z = func(0) 
+  complex_1 = func(1) - z
+  complex_2 = func(1j) - z 
+  return np.array([[    1,         0,    0],
+                   [z.real, complex_1.real, complex_2.real],
+                   [z.imag, complex_1.imag, complex_2.imag]])
+
+
 class DeRhamIFS:
     """
     An iterated function system (IFS) based on the chaos game for drawing de Rham curves.
@@ -57,7 +66,13 @@ class DeRhamIFS:
 
     @classmethod
     def from_complex_functions(cls, d0: Callable[[complex], complex], d1: Callable[[complex], complex]) -> 'DeRhamIFS':
-        pass
+        ifs = cls(0, 0, 0, 0, 0)
+        ifs.d0 = _complex_function_to_matrix(d0)
+        ifs.d1 = _complex_function_to_matrix(d1)
+        return ifs
+
+        
+
 
     @property
     def points(self) -> npt.NDArray[np.float64]:
