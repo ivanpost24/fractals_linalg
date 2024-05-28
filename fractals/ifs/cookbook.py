@@ -3,7 +3,7 @@
 
 import numpy as np
 
-from fractals.de_rham import DeRhamIFS, simple_de_rham_ifs, cesaro_curve_ifs, takagi_curve_ifs, koch_peano_curve_ifs
+from fractals.ifs.de_rham import simple_de_rham_ifs, cesaro_curve_ifs, takagi_curve_ifs, koch_peano_curve_ifs
 
 
 __all__ = ['levy_c_curve', 'cesaro_vepstas_fig2', 'blancmange_curve', 'koch_curve', 'koch_peano_vepstas_fig3',

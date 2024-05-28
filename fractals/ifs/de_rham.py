@@ -17,13 +17,16 @@ def _scale(array: np.ndarray, bottom: float, top: float, bounds: tuple[float, fl
     return np.interp(array, bounds, (bottom, top))
 
 
-def _complex_function_to_matrix(func: Callable[[complex], complex], delta: float = 1e-5): 
-  z = func(0) 
-  complex_1 = func(1) - z
-  complex_2 = func(1j) - z 
-  return np.array([[    1,         0,    0],
-                   [z.real, complex_1.real, complex_2.real],
-                   [z.imag, complex_1.imag, complex_2.imag]])
+def _complex_function_to_matrix(func: Callable[[complex], complex], delta: float = 1e-5):
+    """Converts an affine complex function into a matrix."""
+    # Getting the offset
+    z = func(0)
+    # Getting the transformed basis vectors for the output space of the function
+    complex_1 = func(delta) - z
+    complex_2 = func(delta * 1j) - z
+    return np.array([[     1,              0,              0],
+                     [z.real, complex_1.real, complex_2.real],
+                     [z.imag, complex_1.imag, complex_2.imag]])
 
 
 class DeRhamIFS:
@@ -66,13 +69,17 @@ class DeRhamIFS:
 
     @classmethod
     def from_complex_functions(cls, d0: Callable[[complex], complex], d1: Callable[[complex], complex]) -> 'DeRhamIFS':
+        """
+        Creates a new DeRhamIFS object from two affine complex functions. If the functions are not affine then a linear
+        approximation will be used.
+        :param d0: The first affine complex function.
+        :param d1: The second affine complex function.
+        :return: A DeRhamIFS object using the two affine complex functions as its transformations.
+        """
         ifs = cls(0, 0, 0, 0, 0)
         ifs.d0 = _complex_function_to_matrix(d0)
         ifs.d1 = _complex_function_to_matrix(d1)
         return ifs
-
-        
-
 
     @property
     def points(self) -> npt.NDArray[np.float64]:
