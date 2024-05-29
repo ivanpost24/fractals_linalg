@@ -24,3 +24,5 @@ Finally run
 pip install -r requirements.txt
 ```
 to install all the necessary packages.
+
+It should be noted that all code was tested only with Python 3.12, although Python 3.11 will likely still work.
