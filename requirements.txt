@@ -1,4 +1,4 @@
-setuptools~=69.5.1
+setuptools~=70.0.0
 -e .
 numpy~=1.26.4
 matplotlib~=3.8.4
